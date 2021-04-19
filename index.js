@@ -3,7 +3,7 @@ const connection = require("./config/connection");
 const consoleTable = require("console.table");
 
 const init = () => {
-    console.log("Welcome to the employee tracker")
+    console.log("Welcome to Employee Tracker CMS")
     inquirer.prompt({
         type: "list",
         name: "choices",
@@ -18,46 +18,47 @@ const init = () => {
             "Update employee roles",
             "Exit"
         ]
-    }).then(response => {
-        switch (response.choices) {
-            case "Add department":
-                addDepartment();
-                break;
-            case "Add role":
-                addRole();
-                break;
-            case "Add employee":
-                addEmployee();
-                break;
-            case "View departments":
-                viewDepartments();
-                break;
-            case "View roles":
-                viewRoles();
-                break;
-            case "View employees":
-                viewEmployees();
-                break;
-            case "Update employee roles":
-                updateEmployeeRoles();
-                break;
-            case "Exit":
-                console.log("Thanks for using the employee tracker")
-                connection.end();
-                break;
-        };
-    });
+    })
+        .then(response => {
+            switch (response.choices) {
+                case "Add department":
+                    addDepartment();
+                    break;
+                case "Add role":
+                    addRole();
+                    break;
+                case "Add employee":
+                    addEmployee();
+                    break;
+                case "View departments":
+                    viewDepartments();
+                    break;
+                case "View roles":
+                    viewRoles();
+                    break;
+                case "View employees":
+                    viewEmployees();
+                    break;
+                case "Update employee roles":
+                    updateEmployeeRoles();
+                    break;
+                case "Exit":
+                    console.log("Thanks for using Employee Tracker CMS")
+                    connection.end();
+                    break;
+            };
+        });
 };
 
 const addDepartment = () => {
     inquirer.prompt([{
         type: "input",
-        name: "newDepartment",
+        name: "department_name",
         message: "What is the name of the new department?"
     }])
         .then(answer => {
             connection.query("INSERT INTO departments SET ?", {
-                name: answer.name
+                department_name: answer.department_name
             }, (err, res) => {
                 if (err) throw err
                 console.table(res);
@@ -68,7 +69,7 @@ const addDepartment = () => {
 
 const addRole = () => {
     connection.query("SELECT * FROM departments", (err, departmentList) => {
-        let departments = departmentList.map(({ id, name }) => ({ name: name, value: id }));
+        let departments = departmentList.map(({ id, department_name }) => ({ value: id, name: department_name }));
 
         inquirer.prompt([{
             type: "input",
@@ -82,7 +83,7 @@ const addRole = () => {
         },
         {
             type: "list",
-            name: "department",
+            name: "department_id",
             message: "Which department does this role belong to?",
             choices: departments
         }])
@@ -90,7 +91,7 @@ const addRole = () => {
                 connection.query("INSERT INTO roles SET ?", {
                     title: answer.title,
                     salary: answer.salary,
-                    department: answer.department_id,
+                    department_id: answer.department_id,
                 }, (err, res) => {
                     if (err) throw err
                     console.table(res);
@@ -102,7 +103,7 @@ const addRole = () => {
 
 const addEmployee = () => {
     connection.query("SELECT * FROM roles", (err, roleList) => {
-        let roles = roleList.map(({ id, name }) => ({ name: name, value: id }));
+        let roles = roleList.map(({ id, title }) => ({ value: id, name: title }));
 
         inquirer.prompt([{
             type: "input",
@@ -118,19 +119,19 @@ const addEmployee = () => {
             type: "list",
             name: "role_id",
             message: "What is the employee's ID?",
-            choice: roles
+            choices: roles
         },
         {
             type: "list",
             name: "manager_id",
             message: "What is the manager's ID?",
-            choice: roles
+            choices: roles
         }])
             .then(answer => {
                 connection.query("INSERT INTO employees SET ?", {
                     first_name: answer.first_name,
                     last_name: answer.last_name,
-                    role_id: answer.last_name,
+                    role_id: answer.role_id,
                     manager_id: answer.manager_id
                 }, (err, res) => {
                     if (err) throw err
@@ -166,25 +167,27 @@ const viewEmployees = () => {
 };
 
 const updateEmployeeRoles = () => {
-    connection.query("SELECT * FROM employees", (err, res) => {
-        let employees = employeeList.map(({ name, id }) => ({ name: name, value: id }));
+    connection.query("SELECT * FROM employees", (err, employeeList) => {
+        let employees = employeeList.map(({ id, first_name, last_name }) => ({ value: id, name: first_name + last_name }));
 
         inquirer.prompt({
             type: "list",
-            name: "updateEmployee",
+            name: "employee",
             message: "Which employee would you like to update?",
             choices: employees
         })
-            .then(answer => {
-                connection.query("SELECT * FROM roles", (err, res) => {
+            .then(pick => {
+                connection.query("SELECT * FROM roles", (err, roleList) => {
+                    let roles = roleList.map(({ id, title }) => ({ value: id, name: title }));
+
                     inquirer.prompt({
                         type: "list",
-                        name: "updateRole",
-                        message: "What role would you like to update?",
+                        name: "role",
+                        message: "What is their new role?",
                         choices: roles
                     })
-                        .then(newRole => {
-                            connection.query("UPDATE employees SET role_id + ? WHERE id = ?", [newRole.updateRole, answer.updateEmployee], (err, res) => {
+                        .then(update => {
+                            connection.query("UPDATE employees SET role_id = ? WHERE id = ?", [update.role, pick.employee], (err, res) => {
                                 if (err) throw err;
                                 console.table(res);
                                 init();
