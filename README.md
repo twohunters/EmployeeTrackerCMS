@@ -17,7 +17,7 @@ Run `npm i` to install the necessary dependencies, and then `node server.js` to 
 
 ## Usage
 
-~ link to instructional video here ~
+[Video Tutorial](/assets/tutorial.mp4)
 
 
 ## Credits
